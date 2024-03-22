@@ -47,6 +47,13 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
 
     try {
       await cameraController.initialize();
+      cameraController
+          .getMaxZoomLevel()
+          .then((value) => _maxAvailableZoom = value);
+
+      cameraController
+          .getMinZoomLevel()
+          .then((value) => _minAvailableZoom = value);
     } on CameraException catch (e) {
       debugPrint('Error initializing camera: $e');
     } // Dispose the previous controller
@@ -97,7 +104,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
       return null;
     }
   }
-
+  double _currentZoomLevel = 1.0;
   XFile? xFile;
 
   void _onTakePhotoPressed() async {
@@ -117,19 +124,13 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
       }
     }
   }
-
+  double _minAvailableZoom = 1.0;
+  double _maxAvailableZoom = 6.0;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     initCamera();
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   @override
@@ -146,6 +147,39 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                         ColorFilter.mode(myColors[currentIndex], BlendMode.hue),
                     child: CameraPreview(_controller!))),
             ],
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _currentZoomLevel,
+                    min: _minAvailableZoom,
+                    max: _maxAvailableZoom,
+                    activeColor: Colors.white,
+                    inactiveColor: Colors.white30,
+                    onChanged: (value) async {
+                      setState(() {
+                        _currentZoomLevel = value;
+                      });
+                      await _controller!.setZoomLevel(value);
+                    },
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      _currentZoomLevel.toStringAsFixed(1) +
+                          'x',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             Align(
               alignment: Alignment.bottomCenter,
               child: SizedBox(
@@ -213,6 +247,20 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(onPressed: () async {
+    setState(() {
+                _currentZoomLevel = 2.0;
+              });
+              await _controller!.setZoomLevel(_currentZoomLevel);
+      },),
     );
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
 }
