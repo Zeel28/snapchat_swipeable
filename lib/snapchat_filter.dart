@@ -18,7 +18,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
   bool _isCameraInitialized = false;
   late final List<CameraDescription> _cameras;
   FixedExtentScrollController fixedExtentScrollController =
-      FixedExtentScrollController();
+  FixedExtentScrollController();
   int currentIndex = 0;
   List<MaterialColor> myColors = Colors.primaries;
 
@@ -32,7 +32,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
 
   Future<void> initCamera() async {
     _cameras =
-        await availableCameras(); // Initialize the camera with the first camera in the list
+    await availableCameras(); // Initialize the camera with the first camera in the list
     await onNewCameraSelected(_cameras.first);
   }
 
@@ -140,12 +140,12 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
         child: Stack(
           children: [
             if(_controller != null && _controller!.value.isInitialized)...[
-            SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: ColorFiltered(
-                    colorFilter:
-                        ColorFilter.mode(myColors[currentIndex], BlendMode.hue),
-                    child: CameraPreview(_controller!))),
+              SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: ColorFiltered(
+                      colorFilter:
+                      ColorFilter.mode(myColors[currentIndex], BlendMode.hue),
+                      child: CameraPreview(_controller!))),
             ],
             Row(
               children: [
@@ -236,7 +236,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                           decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border:
-                                  Border.all(width: 3, color: Colors.black)),
+                              Border.all(width: 3, color: Colors.black)),
                         ),
                       ),
                     ),
@@ -248,10 +248,10 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(onPressed: () async {
-    setState(() {
-                _currentZoomLevel = 2.0;
-              });
-              await _controller!.setZoomLevel(_currentZoomLevel);
+        setState(() {
+          _currentZoomLevel = 2.0;
+        });
+        await _controller!.setZoomLevel(_currentZoomLevel);
       },),
     );
   }
