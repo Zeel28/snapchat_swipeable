@@ -17,7 +17,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
   FixedExtentScrollController();
   int currentIndex = 0;
   List<MaterialColor> myColors = Colors.primaries;
-  CameraController? _controller;
+   CameraController? _controller;
   List<CameraDescription>? _availableCameras;
 
   @override
@@ -31,11 +31,9 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
     _initCamera(_availableCameras!.first);
   }
 
-  // init camera
   Future<void> _initCamera(CameraDescription description) async {
     _controller = CameraController(description, ResolutionPreset.ultraHigh,
         enableAudio: true);
-
     try {
       await _controller!.initialize();
       setState(() {});
@@ -83,19 +81,13 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
   XFile? xFile;
 
   void _onTakePhotoPressed() async {
-    final navigator = Navigator.of(context);
     xFile = await capturePhoto();
-    setState(() {});
     if (xFile != null) {
       if (xFile!.path.isNotEmpty) {
-        navigator.push(
-          MaterialPageRoute(
-            builder: (context) => PreviewPage(
-              imagePath: xFile!.path,
-              initialFilter: currentIndex,
-            ),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PreviewPage(
+          imagePath: xFile!.path,
+          initialFilter: currentIndex,
+        ),));
       }
     }
   }
@@ -148,7 +140,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                           child: ListWheelScrollView.useDelegate(
                             diameterRatio: 7.5,
                             controller: fixedExtentScrollController,
-                            renderChildrenOutsideViewport: true,
+                            // renderChildrenOutsideViewport: true,
                             clipBehavior: Clip.none,
                             childDelegate: ListWheelChildBuilderDelegate(
                               childCount: myColors.length,
@@ -158,7 +150,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                                     userClickedSpin(index);
                                   },
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 400),
+                                    duration: const Duration(milliseconds: 100),
                                     height: index == currentIndex ? 70 : 60,
                                     width: index == currentIndex ? 70 : 60,
                                     decoration: BoxDecoration(
