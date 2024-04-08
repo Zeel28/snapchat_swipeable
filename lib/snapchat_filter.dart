@@ -140,20 +140,22 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                           child: ListWheelScrollView.useDelegate(
                             diameterRatio: 7.5,
                             controller: fixedExtentScrollController,
-                            // renderChildrenOutsideViewport: true,
+                            renderChildrenOutsideViewport: true,
                             clipBehavior: Clip.none,
                             childDelegate: ListWheelChildBuilderDelegate(
                               childCount: myColors.length,
                               builder: (context, index) {
                                 return InkWell(
                                   onTap: () {
-                                    userClickedSpin(index);
+                                    // userClickedSpin(index);
                                   },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 100),
+                                  child:
+                                  Container(
+                                    // duration: const Duration(milliseconds: 100),
                                     height: index == currentIndex ? 70 : 60,
                                     width: index == currentIndex ? 70 : 60,
-                                    decoration: BoxDecoration(
+                                    decoration:
+                                    BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: myColors[index],
                                         border: Border.all(
@@ -168,7 +170,6 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
                             physics: const FixedExtentScrollPhysics(),
                             onSelectedItemChanged: (value) {
                               currentIndex = value;
-                              setState(() {});
                             },
                           ),
                         ),
