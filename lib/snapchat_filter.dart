@@ -27,7 +27,6 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
   }
 
   Future<void> _getAvailableCameras() async {
-    WidgetsFlutterBinding.ensureInitialized();
     _availableCameras = await availableCameras();
     _initCamera(_availableCameras!.first);
   }
@@ -69,7 +68,6 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
   Future<XFile?> capturePhoto() async {
     final CameraController? cameraController = _controller;
     if (cameraController!.value.isTakingPicture) {
-      // A capture is already pending, do nothing.
       return null;
     }
     try {
@@ -207,5 +205,12 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    fixedExtentScrollController.dispose();
+    super.dispose();
   }
 }
