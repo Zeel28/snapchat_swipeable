@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'PreviewPage.dart';
 
-
-
 class SnapChatFilterScreen extends StatefulWidget {
   const SnapChatFilterScreen({super.key});
 
@@ -14,13 +12,51 @@ class SnapChatFilterScreen extends StatefulWidget {
 
 class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
     with WidgetsBindingObserver {
-  CameraController? _controller;
-  bool _isCameraInitialized = false;
-  late final List<CameraDescription> _cameras;
+  double zoom = 0.0;
   FixedExtentScrollController fixedExtentScrollController =
   FixedExtentScrollController();
   int currentIndex = 0;
   List<MaterialColor> myColors = Colors.primaries;
+  CameraController? _controller;
+  List<CameraDescription>? _availableCameras;
+
+  @override
+  void initState() {
+    super.initState();
+    _getAvailableCameras();
+  }
+
+  Future<void> _getAvailableCameras() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    _availableCameras = await availableCameras();
+    _initCamera(_availableCameras!.first);
+  }
+
+  // init camera
+  Future<void> _initCamera(CameraDescription description) async {
+    _controller = CameraController(description, ResolutionPreset.ultraHigh,
+        enableAudio: true);
+
+    try {
+      await _controller!.initialize();
+      setState(() {});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void _toggleCameraLens() {
+    final lensDirection = _controller!.description.lensDirection;
+    CameraDescription newDescription;
+    if (lensDirection == CameraLensDirection.front) {
+      newDescription = _availableCameras!.firstWhere((description) =>
+      description.lensDirection == CameraLensDirection.back);
+    } else {
+      newDescription = _availableCameras!.firstWhere((description) =>
+      description.lensDirection == CameraLensDirection.front);
+    }
+    _initCamera(newDescription);
+  }
 
   void userClickedSpin(int jumpTo) {
     fixedExtentScrollController.animateToItem(
@@ -28,65 +64,6 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
       duration: const Duration(milliseconds: 300),
       curve: Curves.fastOutSlowIn,
     );
-  }
-
-  Future<void> initCamera() async {
-    _cameras =
-    await availableCameras(); // Initialize the camera with the first camera in the list
-    await onNewCameraSelected(_cameras.first);
-  }
-
-  Future<void> onNewCameraSelected(CameraDescription description) async {
-    final previousCameraController =
-        _controller; // Instantiating the camera controller
-    final CameraController cameraController = CameraController(
-      description,
-      ResolutionPreset.high,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    ); // Initialize controller
-
-    try {
-      await cameraController.initialize();
-      cameraController
-          .getMaxZoomLevel()
-          .then((value) => _maxAvailableZoom = value);
-
-      cameraController
-          .getMinZoomLevel()
-          .then((value) => _minAvailableZoom = value);
-    } on CameraException catch (e) {
-      debugPrint('Error initializing camera: $e');
-    } // Dispose the previous controller
-    await previousCameraController
-        ?.dispose(); // Replace with the new controller
-    if (mounted) {
-      setState(() {
-        _controller = cameraController;
-      });
-    } // Update UI if controller updated
-    cameraController.addListener(() {
-      if (mounted) setState(() {});
-    }); // Update the Boolean
-    if (mounted) {
-      setState(() {
-        _isCameraInitialized = _controller!.value.isInitialized;
-      });
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _controller;
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
-    if (state == AppLifecycleState.inactive) {
-      // Free up memory when camera not active
-      cameraController.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      // Reinitialize the camera with same properties
-      onNewCameraSelected(cameraController.description);
-    }
   }
 
   Future<XFile?> capturePhoto() async {
@@ -104,7 +81,7 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
       return null;
     }
   }
-  double _currentZoomLevel = 1.0;
+
   XFile? xFile;
 
   void _onTakePhotoPressed() async {
@@ -124,143 +101,111 @@ class _SnapChatFilterScreenState extends State<SnapChatFilterScreen>
       }
     }
   }
-  double _minAvailableZoom = 1.0;
-  double _maxAvailableZoom = 6.0;
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    initCamera();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(
-          children: [
-            if(_controller != null && _controller!.value.isInitialized)...[
-              SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  child: ColorFiltered(
-                      colorFilter:
-                      ColorFilter.mode(myColors[currentIndex], BlendMode.hue),
-                      child: CameraPreview(_controller!))),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _currentZoomLevel,
-                    min: _minAvailableZoom,
-                    max: _maxAvailableZoom,
-                    activeColor: Colors.white,
-                    inactiveColor: Colors.white30,
-                    onChanged: (value) async {
-                      setState(() {
-                        _currentZoomLevel = value;
-                      });
-                      await _controller!.setZoomLevel(value);
-                    },
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      _currentZoomLevel.toStringAsFixed(1) +
-                          'x',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
+        child: GestureDetector(
+          onScaleUpdate: (details) {
+            zoom = details.scale;
+            setState(() {
+              _controller!.setZoomLevel(zoom);
+            });
+          },
+          child: Stack(
+            children: [
+              if (_controller != null && _controller!.value.isInitialized) ...[
+                SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                            myColors[currentIndex], BlendMode.hue),
+                        child: CameraPreview(_controller!))),
               ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: 100,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: RotatedBox(
-                        quarterTurns: -1,
-                        child: ListWheelScrollView.useDelegate(
-                          diameterRatio: 7.5,
-                          controller: fixedExtentScrollController,
-                          renderChildrenOutsideViewport: true,
-                          clipBehavior: Clip.none,
-                          childDelegate: ListWheelChildBuilderDelegate(
-                            childCount: myColors.length,
-                            builder: (context, index) {
-                              return InkWell(
-                                onTap: () {
-                                  userClickedSpin(index);
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 400),
-                                  height: index == currentIndex ? 70 : 60,
-                                  width: index == currentIndex ? 70 : 60,
-                                  decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: myColors[index],
-                                      border: Border.all(
-                                        width: 2.5,
-                                        color: Colors.black,
-                                      )),
-                                ),
-                              );
-                            },
-                          ),
-                          itemExtent: 80,
-                          physics: const FixedExtentScrollPhysics(),
-                          onSelectedItemChanged: (value) {
-                            currentIndex = value;
-                            setState(() {});
-                          },
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: InkWell(
-                        onTap: () {
-                          _onTakePhotoPressed();
-                        },
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border:
-                              Border.all(width: 3, color: Colors.black)),
-                        ),
-                      ),
-                    ),
-                  ],
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 40, right: 5),
+                  child: IconButton(
+                      onPressed: () {
+                        _toggleCameraLens();
+                      },
+                      icon: const Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 40,
+                      )),
                 ),
               ),
-            ),
-          ],
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  height: 120,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: RotatedBox(
+                          quarterTurns: -1,
+                          child: ListWheelScrollView.useDelegate(
+                            diameterRatio: 7.5,
+                            controller: fixedExtentScrollController,
+                            renderChildrenOutsideViewport: true,
+                            clipBehavior: Clip.none,
+                            childDelegate: ListWheelChildBuilderDelegate(
+                              childCount: myColors.length,
+                              builder: (context, index) {
+                                return InkWell(
+                                  onTap: () {
+                                    userClickedSpin(index);
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 400),
+                                    height: index == currentIndex ? 70 : 60,
+                                    width: index == currentIndex ? 70 : 60,
+                                    decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: myColors[index],
+                                        border: Border.all(
+                                          width: 2.5,
+                                          color: Colors.black,
+                                        )),
+                                  ),
+                                );
+                              },
+                            ),
+                            itemExtent: 80,
+                            physics: const FixedExtentScrollPhysics(),
+                            onSelectedItemChanged: (value) {
+                              currentIndex = value;
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: InkWell(
+                          onTap: () {
+                            _onTakePhotoPressed();
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border:
+                                Border.all(width: 3, color: Colors.black)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(onPressed: () async {
-        setState(() {
-          _currentZoomLevel = 2.0;
-        });
-        await _controller!.setZoomLevel(_currentZoomLevel);
-      },),
     );
   }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _controller?.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-  }
-
 }
